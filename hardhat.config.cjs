@@ -1,6 +1,8 @@
 /** @type import('hardhat/config').HardhatUserConfig */
 require("dotenv").config();
 require("@nomicfoundation/hardhat-verify");
+require("@nomicfoundation/hardhat-toolbox");
+require("@nomicfoundation/hardhat-ignition-ethers");
 
 module.exports = {
   solidity: {
@@ -33,6 +35,26 @@ module.exports = {
     baseTest: {
       chainId: 84532,
       url: "https://sepolia.base.org",
+      accounts: [process.env.PRIVATE_KEY],
+    },
+    lineaTest: {
+      chainId: 59140,
+      url: "https://rpc.goerli.linea.build",
+      accounts: [process.env.PRIVATE_KEY],
+    },
+    arbitrumTest: {
+      chainId: 421614,
+      url: "https://arbitrum-sepolia.blockpi.network/v1/rpc/public",
+      accounts: [process.env.PRIVATE_KEY],
+    },
+    auroraTest: {
+      chainId: 1313161555,
+      url: "https://testnet.aurora.dev",
+      accounts: [process.env.PRIVATE_KEY],
+    },
+    bnbTest: {
+      chainId: 97,
+      url: "https://bsc-testnet.public.blastapi.io",
       accounts: [process.env.PRIVATE_KEY],
     },
   },

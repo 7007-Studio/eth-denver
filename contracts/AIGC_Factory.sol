@@ -5,7 +5,6 @@ pragma solidity >=0.7.0 <0.9.0;
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "./AIGC.sol";
 import "./AIGT.sol";
-import "./IStoryProtocol.sol";
 
 contract AIGC_Factory {
     using Clones for address;
@@ -31,18 +30,6 @@ contract AIGC_Factory {
     function createAIGC(string memory _modelName, string memory _modelSymbol, uint256 _tokenPrice, uint256 _costToken, bytes32 _aiModelVm, uint256 _ownerReservePercent, uint96 _royalty) public returns (uint256) {
         modelIndexCurrent++;
 
-        // story protocol register IP
-        string[] memory ipAssetTypesShared = new string[](1);
-        ipAssetTypesShared[0] = "Image";
-        
-        address ipOrgAddr = IStoryProtocol(0x537fcCce413236A4E5f4f385e2edC861aEc622f0).registerIpOrg(
-            aigcContractImpl.predictDeterministicAddress(bytes32(modelIndexCurrent)), // owner to be replaced
-            _modelName, // IP org name
-            _modelSymbol, // IP org symbol
-            ipAssetTypesShared // IP asset types
-        );
-        modelIndexToIpOrgAddr[modelIndexCurrent] = ipOrgAddr;
-
         // 20
         address newAIGT = address(new AIGT(modelIndexCurrent, _modelName, _modelSymbol, _tokenPrice, msg.sender, 1000, _ownerReservePercent)); // hardcode token maxSupply
         // 721
@@ -57,7 +44,6 @@ contract AIGC_Factory {
         address[] memory vals3 = new address[](3);
         vals3[0] = newAIGT;
         vals3[1] = 0xfEBfdE43561Bc74e4F982cdEB40A29966708E035;
-        vals3[2] = ipOrgAddr;
 
         AIGC(newAIGC).initialize(vals, vals2, vals3, _aiModelVm, _royalty);
         deployedAIGCs.push(newAIGC);

@@ -1,11 +1,9 @@
-const { expect } = require("chai");
-
 async function main() {
   const [owner] = await ethers.getSigners();
 
   const AIGC = await ethers.getContractFactory("AIGC");
-  // const _aigc = await AIGC.deploy();
-  // await _aigc.waitForDeployment();
+  const _aigc = await AIGC.deploy();
+  await _aigc.waitForDeployment();
 
   const AIGC_Factory = await ethers.getContractFactory("AIGC_Factory");
   const AIGC_factory = await AIGC_Factory.deploy(_aigc.target);

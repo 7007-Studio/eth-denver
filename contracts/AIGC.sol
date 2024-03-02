@@ -8,7 +8,6 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URISto
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721RoyaltyUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IOpmlLib.sol";
-import "./IStoryProtocol.sol";
 
 contract AIGC is Initializable, ERC721Upgradeable, ERC721URIStorageUpgradeable, ERC721RoyaltyUpgradeable {
       
@@ -67,23 +66,6 @@ contract AIGC is Initializable, ERC721Upgradeable, ERC721URIStorageUpgradeable, 
           _setTokenURI(tokenId, _tokenURI);
 
           tokenIdToRequestId[tokenId] = opmlLib.initOpmlRequest(aiModelVm, _promptHash, _opmlFinalState);
-
-          // story protocol register IP asset
-          Registration.RegisterIPAssetParams memory ipAssetData = Registration.RegisterIPAssetParams({
-                owner: address(this),
-                ipOrgAssetType: 0,
-                name: modelName,
-                hash: 0x0, // TODO: not sure what is this hash about
-                mediaUrl: _ipAssetMediaUrl
-            });
-          (uint256 ipAssetId, uint256 ipOrg_AssetId) = IStoryProtocol(0x537fcCce413236A4E5f4f385e2edC861aEc622f0).registerIPAsset(
-                ipOrgAddr,
-                ipAssetData,
-                0, // no license
-                new bytes[](0), // no pre-hook
-                new bytes[](0) // no post-hook
-          );
-          tokenIdToIpAssetId[tokenId] = ipAssetId;
 
           tokenId++;
       }

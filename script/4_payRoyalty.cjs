@@ -43,10 +43,10 @@ async function deployContract() {
   const ipId = await ipAsset.ipAccount(
     11155111,
     "0x0B89f60136A91f3B36557F9414cbd157d0ada7bc",
-    80
+    29
   );
   // console.log(ipId);
-  const license = await License.attach(licenseModule);
+  // const license = await License.attach(licenseModule);
 
   // await license.addPolicyToIp(ipId, 4);
 
@@ -55,11 +55,11 @@ async function deployContract() {
 
   // wrap weth first
   // await weth.deposit({ value: ethers.parseEther("0.5") });
-  const wethBal = await weth.balanceOf(signer);
-  console.log(wethBal);
+  // const wethBal = await weth.balanceOf(signer);
+  // console.log(wethBal);
 
   // approve weth first
-  // await weth.approve(RoyaltyPolicyLAP, ethers.parseEther("0.5"));
+  await weth.approve(RoyaltyPolicyLAP, ethers.parseEther("0.5"));
 
   await contract.payRoyaltyOnBehalf(ipId, ipId, WETHAddr, 1);
 }

@@ -90,7 +90,7 @@ contract AIGC_NFT_noOAO is Ownable, ERC721Enumerable {
     }
 
     /// NFT related
-    function mint(address to, string calldata prompt, uint256 seed, bool registerIpAsset) external payable returns (uint256 tokenId) {
+    function mint(address to, string calldata prompt, uint256 seed) external payable returns (uint256 tokenId) {
         // check if already minted
         require(promptSeedToTokenId[encode(prompt, seed)] == 0, "prompt and seed has already minted");
         // check time
@@ -118,36 +118,6 @@ contract AIGC_NFT_noOAO is Ownable, ERC721Enumerable {
             url:  "https://yourip.xyz/metadata-regarding-its-ip",
             customMetadata: attributes
         });
-
-        // check if is derivative
-        uint256[] memory policies = new uint256[](1);
-
-        if(promptToTokenId[bytes(prompt)] != 0) {
-            SPG.Signature memory signature = SPG.Signature({
-                signer: address(this),
-                deadline: block.timestamp + 1000,
-                signature: ""
-            });
-            spg.registerDerivativeIpWithSig(
-                policies,
-                bytes(0x0),
-                address(this),
-                totalSupply(),
-                ipMetadata,
-                signature
-            );
-        }
-
-        // register ip asset and mint 10 license
-        if(registerIpAsset){
-            SPG.Signature memory signature = SPG.Signature({
-                signer: address(this),
-                deadline: block.timestamp + 1000,
-                signature: ""
-            });
-            address ipId = spg.registerIpWithSig(8, address(this), totalSupply(), ipMetadata, signature);
-            spg.mintLicense(8, ipId, 10, bytes(0x0)); // royaltyContext is 0x0 now
-        }
 
         // increase minted count
         _mintedCounts[to] ++;

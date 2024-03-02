@@ -1,6 +1,6 @@
 import ethfs from "ethfs-sdk";
 import fs from "fs";
-import ethers from "ethers";
+import { ethers } from "ethers";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -19,9 +19,8 @@ const uploadFile = async (filePath, fileName) => {
   const directoryPath = "img/" + fileName;
 
   const rpc = "https://galileo.web3q.io:8545";
-  const privateKey = process.env.PRIVATE_KEY;
-  const provider = new ethers.providers.JsonRpcProvider(rpc);
-  const signer = new ethers.Wallet(privateKey, provider);
+  const provider = new ethers.JsonRpcProvider(rpc);
+  const signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
   const directoryAddress = await ethfs.createDirectory(signer);
   console.log(directoryAddress);
 
