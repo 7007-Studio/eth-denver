@@ -1,20 +1,25 @@
 "use client";
 
-import { aigcAbi } from "@/generated";
 import { useEffect, useRef, useState } from "react";
+import { useAccount, useReadContracts } from "wagmi";
+import { Address, isAddressEqual, zeroAddress } from "viem";
 import axios from "axios";
+import { useParams, useRouter } from "next/navigation";
+
+import { aigcAbi } from "@/generated";
 import { Metadata } from "@/types";
 import { concatAddress, openseaUrl } from "@/helpers";
-import { useAccount, useReadContracts } from "wagmi";
-import { Address, isAddressEqual } from "viem";
 import ArrowLeftIcon from "@/components/arrowLeftIcon";
 import Card from "@/components/card";
-import { useParams, useRouter } from "next/navigation";
-import SPIntegration from "./sp-integration";
-import Buy from "./buy";
 import ListingNFTModal, {
   ListingNFT,
 } from "@/components/modal/listingNFTModal";
+import Buy from "./buy";
+import SPIntegration from "./sp-integration";
+import RemixModal from "@/components/modal/remixModal";
+import { AIGCContent } from "@/components/formAIGC";
+import { getSrc } from "@livepeer/react/external";
+import * as Player from "@livepeer/react/player";
 
 export default function Detail() {
   const router = useRouter();
@@ -24,7 +29,10 @@ export default function Detail() {
   const listingNFTModalRef = useRef<HTMLDialogElement>(null);
   const [listingNFT, setListingNFT] = useState<ListingNFT>();
 
-  const { address: connectedWallet, chainId } = useAccount();
+  const remixModalRef = useRef<HTMLDialogElement>(null);
+  const [original, setOriginal] = useState<AIGCContent>();
+
+  const { address: connectedWallet, chain } = useAccount();
 
   const [metadata, setMetadata] = useState<Metadata>();
   const [animationUrl, setAnimationUrl] = useState<string>();
@@ -64,19 +72,25 @@ export default function Detail() {
       if (metadata.animation_url) {
         setAnimationUrl(metadata.animation_url);
       }
+
+      setOriginal({
+        name: metadata?.name || "",
+        prompt:
+          metadata?.attributes?.find(
+            (a: { trait_type: string; value: string }) =>
+              a.trait_type === "prompt"
+          )?.value || "",
+        imageUrl: metadata?.image,
+      });
     };
 
     fetchMetadata();
   }, [tokenUri]);
 
-  // TODO: add "remix" functionality (mintLicense, linkIpToParent)
-
   const isOwner =
     ownerOf?.result &&
     connectedWallet &&
     isAddressEqual(ownerOf?.result, connectedWallet as Address);
-
-  console.debug({ isOwner, chainId, nftContract, tokenId, connectedWallet });
 
   return (
     <>
@@ -97,6 +111,32 @@ export default function Detail() {
                   <div className="flex w-full h-[258px] justify-center items-center">
                     <span className="loading loading-spinner loading-lg"></span>
                   </div>
+                ) : animationUrl?.startsWith("https://vod") ? (
+                  <Player.Root
+                    src={getSrc({
+                      type: "vod",
+                      // @ts-ignore
+                      meta: {
+                        playbackPolicy: null,
+                        source: [
+                          {
+                            hrn: "HLS (TS)",
+                            type: "html5/application/vnd.apple.mpegurl",
+                            url: animationUrl,
+                          },
+                        ],
+                      },
+                    })}
+                    autoPlay
+                    volume={0}
+                  >
+                    <Player.Container>
+                      <Player.Video
+                        title="Agent 327"
+                        style={{ height: "100%", width: "100%" }}
+                      />
+                    </Player.Container>
+                  </Player.Root>
                 ) : animationUrl ? (
                   <div className="max-h-[254px] overflow-hidden">
                     <iframe src={animationUrl} width={258} height={258} />
@@ -178,22 +218,21 @@ export default function Detail() {
             {!isOwner && nftContract && tokenId && (
               <Buy nftContract={nftContract as Address} tokenId={tokenId} />
             )}
-            {isOwner &&
-              chainId &&
-              nftContract &&
-              tokenId &&
-              connectedWallet && (
-                <SPIntegration
-                  chainId={chainId}
-                  connectedWallet={connectedWallet}
-                  nftContract={nftContract as Address}
-                  tokenId={tokenId}
-                  setListingLicense={(license: ListingNFT) => {
-                    setListingNFT(license);
-                    listingNFTModalRef.current?.showModal();
-                  }}
-                />
-              )}
+            {chain && nftContract && tokenId && connectedWallet && (
+              <SPIntegration
+                chain={chain}
+                connectedWallet={connectedWallet}
+                nftContract={nftContract as Address}
+                tokenId={tokenId}
+                setListingLicense={(license: ListingNFT) => {
+                  setListingNFT(license);
+                  listingNFTModalRef.current?.showModal();
+                }}
+                onRemixClicked={() => {
+                  remixModalRef?.current?.showModal();
+                }}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -202,6 +241,15 @@ export default function Detail() {
         listingNFT={listingNFT}
         // listingSuccess={() => {TODO: refresh the card state}}
       />
+      {original && (
+        <RemixModal
+          ref={remixModalRef}
+          modelIndex={1}
+          aigtAddress={zeroAddress}
+          nftContract={nftContract as Address}
+          original={original}
+        />
+      )}
     </>
   );
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAccount, useReadContracts } from "wagmi";
 import axios from "axios";
 import { Listing, Metadata } from "@/types";
@@ -9,7 +9,6 @@ import {
   formatEther,
   formatUnits,
   isAddressEqual,
-  walletActions,
 } from "viem";
 import SPLicenseRegistry from "@/abis/SPLicenseRegistry.json";
 import Card from "./card";
@@ -17,12 +16,17 @@ import {
   concatAddress,
   formatDaysLeft,
   is7007Token,
+  isSPLicenseRegistry,
   openseaUrl,
 } from "@/helpers";
 import { ListingNFT } from "./modal/listingNFTModal";
 import { useReadAigcModelName } from "@/generated";
 import { useRouter } from "next/navigation";
 import BuyButton from "./buy-button";
+
+// livepeer
+import { getSrc } from "@livepeer/react/external";
+import * as Player from "@livepeer/react/player";
 
 function NFTCoverAsset({ metadata }: { metadata?: Metadata }) {
   if (!metadata) {
@@ -34,10 +38,36 @@ function NFTCoverAsset({ metadata }: { metadata?: Metadata }) {
   }
 
   if (metadata?.animation_url) {
+    // if animation url starts with https:// do the following
+    if (!metadata.animation_url.startsWith("https://vod")) {
+      return (
+        <div className="max-h-[258px] overflow-hidden">
+          <iframe src={metadata.animation_url} width={258} height={258} />
+        </div>
+      );
+    }
+    const vodSource = {
+      type: "vod",
+      meta: {
+        playbackPolicy: null,
+        source: [
+          {
+            hrn: "HLS (TS)",
+            type: "html5/application/vnd.apple.mpegurl",
+            url: metadata.animation_url,
+          },
+        ],
+      },
+    };
     return (
-      <div className="max-h-[258px] overflow-hidden">
-        <iframe src={metadata.animation_url} width={258} height={258} />
-      </div>
+      <Player.Root src={getSrc(vodSource)} autoPlay volume={0}>
+        <Player.Container>
+          <Player.Video
+            title="Agent 327"
+            style={{ height: "100%", width: "100%" }}
+          />
+        </Player.Container>
+      </Player.Root>
     );
   }
 
@@ -69,11 +99,10 @@ const NFTCard: React.FC<NFTCardProps> = ({
   onConnectToSP,
 }) => {
   const router = useRouter();
-  const { address: connectedWallet } = useAccount();
+  const { address: connectedWallet, chainId } = useAccount();
 
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [metadata, setMetadata] = useState<Metadata>();
-  const [animationUrl, setAnimationUrl] = useState<string>();
 
   const { data: modelName } = useReadAigcModelName({
     address: nftContract,
@@ -175,8 +204,12 @@ const NFTCard: React.FC<NFTCardProps> = ({
 
     if (isErc721 && tokenURI) {
       const fetchMetadata = async () => {
-        const res = await axios.get(tokenURI);
-        setMetadata(res.data);
+        try {
+          const res = await axios.get(tokenURI);
+          setMetadata(res.data);
+        } catch (error) {
+          console.error("Error fetching metadata via:", tokenURI);
+        }
       };
 
       fetchMetadata();
@@ -215,10 +248,15 @@ const NFTCard: React.FC<NFTCardProps> = ({
       >
         <div className="flex py-4 px-6 justify-between items-center">
           {is7007Token(nftContract) && <span>7007 Genesis NFT</span>}
-          {!is7007Token(nftContract) && <span>DATE</span>}
+          {!is7007Token(nftContract) && <span>&nbsp;</span>}
           {modelName && (
             <span className="badge badge-lg text-[#FF78F1] bg-[#FF78F1]/[0.12]">
               {modelName}
+            </span>
+          )}
+          {isSPLicenseRegistry(nftContract, chainId) && (
+            <span className="badge badge-lg text-[#CC33CC] bg-[#CC33CC]/[0.12]">
+              License
             </span>
           )}
         </div>

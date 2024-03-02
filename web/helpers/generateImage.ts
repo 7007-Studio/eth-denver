@@ -1,13 +1,23 @@
+import { fetchData } from "@/components/formAIGC/ipfsHelper";
 import axios from "axios";
 
-const generateImage = async (contractAddr: string, prompt: string) => {
+const generateImage = async (
+  contractAddr: string,
+  prompt: string,
+  seed: number
+) => {
   try {
     let response = await axios.post(
-      `${process.env.NEXT_PUBLIC_DALLE_HOST}/txt2img`,
-      { contractAddress: contractAddr, prompt: prompt },
-      { timeout: 300000 }
+      `/api/txt2img`,
+      { prompt: prompt, seed: seed },
+      { timeout: 300000, headers: { "Content-Type": "application/json" } }
     );
-    return "data:image/png;base64," + response.data;
+
+    return response.data;
+
+    // const image = await fetchData(response.data);
+    // console.log(image);
+    // return image;
   } catch (error) {
     console.error(error);
   }

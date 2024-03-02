@@ -1,11 +1,13 @@
 import { useMemo } from "react";
+import { useAccount } from "wagmi";
 
-import { AIGC_FACTORY_CONTRACT_ADDRESS } from "@/constants";
 import {
   useReadAigcFactoryDeployedAigCs,
+  useReadAigcModelName,
   useReadAigcTokenId,
 } from "@/generated";
 import AigcNftCreated from "@/components/model/aigcNftCreated";
+import { getContractAddress } from "@/helpers";
 
 import { AIGCContent } from ".";
 import PromptForm from "./promptForm";
@@ -16,9 +18,16 @@ interface PromptStepProps {
 }
 
 const PromptStep = ({ modelIndex, onArtGenerated }: PromptStepProps) => {
+  const { chainId } = useAccount();
+  const aigcFactory = getContractAddress("AIGCFactory", chainId);
+
   const { data: aigcAddress } = useReadAigcFactoryDeployedAigCs({
-    address: AIGC_FACTORY_CONTRACT_ADDRESS,
+    address: aigcFactory,
     args: modelIndex ? [BigInt(modelIndex)] : undefined,
+  });
+
+  const { data: modelName } = useReadAigcModelName({
+    address: aigcAddress,
   });
 
   const { data: lastTokenId } = useReadAigcTokenId({
@@ -43,6 +52,7 @@ const PromptStep = ({ modelIndex, onArtGenerated }: PromptStepProps) => {
       <div className="py-20 px-40 max-w-[1106px] mx-auto bg-white">
         <PromptForm
           submitText="Prompt for free"
+          modelName={modelName || "Genesis Model"}
           onArtGenerated={onArtGenerated}
         />
       </div>
