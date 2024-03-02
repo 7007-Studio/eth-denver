@@ -18,6 +18,18 @@
   - AIGC Factory: https://testnet.bscscan.com/address/0x54F4Ada25fa21aC2f4C5A63aa692bb1b8CC00952#code
   - AIGC NFT: 0xE5bd52A978dF05Ed45805B90A88800d513273723
 
+## Chainlink CCIP for Cross Chain AIGC Prompt Registry and Revenue Sharing
+
+We create a prompt registry contract on Sepolia and Mumbai. Whenever someone register a prompt after minting a AIGC nft in the Sepolia contract, the Mumbai contract will receive the prompt and the corresponding token id for the minted AIGC nft. If the Mumbai contract receives two identical prompt, we will set the revenue sharing token Id to the first prompt's tokenId. Thus, the revenue sharing token Id will be the same for the same prompt on different chains.
+
+### Screenshot of the first prompt being registered
+
+![img](./img/ccip_01.jpg)
+
+### Screenshot of the second identical prompt being registered
+
+![img](./img/ccip_02.jpg)
+
 ## Text to Video
 
 ```bash

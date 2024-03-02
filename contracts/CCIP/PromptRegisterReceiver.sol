@@ -21,7 +21,12 @@ contract PromptRegisterReceiver is CCIPReceiver {
     );
 
     bytes32 private s_lastReceivedMessageId; // Store the last received messageId.
-    string private s_lastReceivedText; // Store the last received text.
+    string private s_registeredPrompt; // Store the last received text.
+    uint256 private tokenId; // Store the AIGC nft tokenId 
+
+    mapping(bytes => uint256) public promptToTokenId;
+    mapping(uint256 => uint256) public tokenIdToRevenueShareTokenId;
+
 
     /// @notice Constructor initializes the contract with the router address.
     /// @param router The address of the router contract.
@@ -32,7 +37,13 @@ contract PromptRegisterReceiver is CCIPReceiver {
         Client.Any2EVMMessage memory any2EvmMessage
     ) internal override {
         s_lastReceivedMessageId = any2EvmMessage.messageId; // fetch the messageId
-        s_lastReceivedText = abi.decode(any2EvmMessage.data, (string)); // abi-decoding of the sent text
+        (s_registeredPrompt, tokenId) = abi.decode(any2EvmMessage.data, (string, uint256)); // abi-decoding of the sent text
+
+        // if prompt is already registered, set the token id to share revenue with 
+        if(promptToTokenId[bytes(s_registeredPrompt)] != 0){
+            tokenIdToRevenueShareTokenId[tokenId] = promptToTokenId[bytes(s_registeredPrompt)];
+        }
+        promptToTokenId[bytes(s_registeredPrompt)] = tokenId; // assume token id starts from 0
 
         emit MessageReceived(
             any2EvmMessage.messageId,
@@ -50,6 +61,6 @@ contract PromptRegisterReceiver is CCIPReceiver {
         view
         returns (bytes32 messageId, string memory text)
     {
-        return (s_lastReceivedMessageId, s_lastReceivedText);
+        return (s_lastReceivedMessageId, s_registeredPrompt);
     }
 }

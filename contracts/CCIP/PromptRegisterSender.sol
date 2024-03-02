@@ -45,15 +45,16 @@ contract PromptRegister is OwnerIsCreator {
     /// @param receiver The address of the recipient on the destination blockchain.
     /// @param text The string text to be sent.
     /// @return messageId The ID of the message that was sent.
-    function sendMessage(
+    function registerPrompt(
         uint64 destinationChainSelector,
         address receiver,
-        string calldata text
+        string calldata text,
+        uint256 tokenId
     ) external onlyOwner returns (bytes32 messageId) {
         // Create an EVM2AnyMessage struct in memory with necessary information for sending a cross-chain message
         Client.EVM2AnyMessage memory evm2AnyMessage = Client.EVM2AnyMessage({
             receiver: abi.encode(receiver), // ABI-encoded receiver address
-            data: abi.encode(text), // ABI-encoded string
+            data: abi.encode(text, tokenId), // ABI-encoded string
             tokenAmounts: new Client.EVMTokenAmount[](0), // Empty array indicating no tokens are being sent
             extraArgs: Client._argsToBytes(
                 // Additional arguments, setting gas limit
