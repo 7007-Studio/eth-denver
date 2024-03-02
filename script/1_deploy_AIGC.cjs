@@ -4,7 +4,7 @@ dotenv.config();
 
 // Replace these with your contract's ABI and bytecode
 // read from file 'hardhat-boilerplate/artifacts/contracts/AIGC_NFT_noOAO.sol/AIGC_NFT_noOAO.json'
-const artifact = require("../hardhat-boilerplate/artifacts/contracts/AIGC_NFT_noOAO.sol/AIGC_NFT_noOAO.json");
+const artifact = require("../artifacts/contracts/AIGC_NFT_noOAO.sol/AIGC_NFT_noOAO.json");
 const contractABI = artifact.abi;
 const contractBytecode = artifact.bytecode;
 
