@@ -39,6 +39,8 @@ We create a prompt registry contract on Sepolia and Mumbai. Whenever someone reg
 
 ## Text to Video (& upload to LivePeer)
 
+![img](./img/livepeer.jpg)
+
 ```bash
 curl -X POST http://localhost:9000/genVideo \
 -H "Content-Type: application/json" \

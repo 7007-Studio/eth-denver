@@ -13,11 +13,12 @@ contract AIGC_NFT is AIOracleCallbackReceiver, Ownable, ERC721 {
     using Address for address;
     string private baseTokenURI;
     uint256 public mintPrice;
-    uint256 public maxMintLimitPerAddr;
-    uint256 public maxSupply;
-    uint256 public mintStartTime;
+    // uint256 public maxMintLimitPerAddr;
+    // uint256 public maxSupply;
+    // uint256 public mintStartTime;
     uint256 public aiModelId;
     uint256 public totalSupply;
+    bool public hasStartMint;
 
     mapping(address => uint256) public _mintedCounts;
 
@@ -46,18 +47,18 @@ contract AIGC_NFT is AIOracleCallbackReceiver, Ownable, ERC721 {
       string memory _name,
       string memory _symbol,
       uint256 _mintPrice,
-      uint256 _maxMintLimitPerAddr,
-      uint256 _maxSupply,
-      uint256 _mintStartTime,
+    //   uint256 _maxMintLimitPerAddr,
+    //   uint256 _maxSupply,
+    //   uint256 _mintStartTime,
       uint256 _aiModelId
     )
       AIOracleCallbackReceiver(_aiOracle)
       ERC721(_name, _symbol)
       Ownable(msg.sender) {
         mintPrice = _mintPrice;
-        maxMintLimitPerAddr = _maxMintLimitPerAddr;
-        maxSupply = _maxSupply;
-        mintStartTime = _mintStartTime;
+        // maxMintLimitPerAddr = _maxMintLimitPerAddr;
+        // maxSupply = _maxSupply;
+        // mintStartTime = _mintStartTime;
         aiModelId = _aiModelId;
       }
 
@@ -78,6 +79,10 @@ contract AIGC_NFT is AIOracleCallbackReceiver, Ownable, ERC721 {
         return prompts[aiModelId][string(data)];
     }
 
+    function startOrStopMint() external onlyOwner {
+        hasStartMint = !hasStartMint;
+    }
+
     // only the AI Oracle can call this function
     function storeAIResult(uint256 modelId, bytes calldata input, bytes calldata output) external onlyAIOracleCallback() {
         prompts[modelId][string(input)] = string(output);
@@ -96,12 +101,13 @@ contract AIGC_NFT is AIOracleCallbackReceiver, Ownable, ERC721 {
     /// NFT related
     function mint(address to, string calldata prompt, uint256 seed) external payable returns (uint256 tokenId) {
         // check time
-        require(block.timestamp >= mintStartTime, "Sale not started");
+        require(hasStartMint, "Sale not started");
+        // require(block.timestamp >= mintStartTime, "Sale not started");
         // require(block.timestamp >= testMintStartTime, "Sale not started");
         // check if enough maxMintCount per address
-        require(_mintedCounts[to] + 1 <= maxMintLimitPerAddr, "Not enough maxMintCount per address per address");
+        // require(_mintedCounts[to] + 1 <= maxMintLimitPerAddr, "Not enough maxMintCount per address per address");
         // check if Exceed max total supply
-        require(totalSupply + 1 <= maxSupply, "Exceed max total upply");
+        // require(totalSupply + 1 <= maxSupply, "Exceed max total upply");
         // check fund
         require(msg.value >= mintPrice, "Not enough fund to mint NFT");
         

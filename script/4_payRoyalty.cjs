@@ -43,7 +43,7 @@ async function deployContract() {
   const ipId = await ipAsset.ipAccount(
     11155111,
     "0x0B89f60136A91f3B36557F9414cbd157d0ada7bc",
-    29
+    58
   );
   // console.log(ipId);
   // const license = await License.attach(licenseModule);

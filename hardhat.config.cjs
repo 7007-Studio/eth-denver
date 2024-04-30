@@ -1,8 +1,8 @@
 /** @type import('hardhat/config').HardhatUserConfig */
 require("dotenv").config();
 require("@nomicfoundation/hardhat-verify");
-require("@nomicfoundation/hardhat-toolbox");
-require("@nomicfoundation/hardhat-ignition-ethers");
+// require("@nomicfoundation/hardhat-toolbox");
+// require("@nomicfoundation/hardhat-ignition-ethers");
 
 module.exports = {
   solidity: {
