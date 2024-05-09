@@ -4,7 +4,7 @@ dotenv.config();
 
 // Replace these with your contract's ABI and bytecode
 // read from file 'hardhat-boilerplate/artifacts/contracts/AIGC_NFT_noOAO.sol/AIGC_NFT_noOAO.json'
-const artifact = require("../artifacts/contracts/AIGC_NFT_noOAO.sol/AIGC_NFT_noOAO.json");
+const artifact = require("../artifacts/contracts/AIGC_NFT.sol/AIGC_NFT.json");
 const contractABI = artifact.abi;
 const contractBytecode = artifact.bytecode;
 
@@ -25,15 +25,14 @@ async function deployContract() {
     // Deploy contract
     const contract = await contractFactory.deploy(
       // Constructor arguments
-      "AIGC NFT", // _name
-      "AIGCNFT", // _symbol
-      0, // _mintPrice
-      5, // _maxMintLimitPerAddr
-      1000, // _maxSupply
-      0, // _mintStartTime
-      0 // _aiModelId
+      "0x0A0f4321214BB6C7811dD8a71cF587bdaF03f0A0",
+      "Stable Diffusion", // _name
+      "SD", // _symbol
+      // _mintPrice 0.002 ether,
+      // ethers.parseEther("0.002"),
+      0,
+      7007 // _aiModelId: SD, in docs.ora.io);
     );
-    // console.log(contract);
 
     // Wait for deployment to finish
     // await contract.deployed();

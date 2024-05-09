@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+// ref: https://sepolia.etherscan.io/address/0xe75af5294f4CB4a8423ef8260595a54298c7a2FB#code
+
 import "./IERC7007.sol";
 import "./IAIOracle.sol";
 import "./AIOracleCallbackReceiver.sol";
@@ -13,30 +15,43 @@ contract AIGC_NFT is AIOracleCallbackReceiver, Ownable, ERC721 {
     using Address for address;
     string private baseTokenURI;
     uint256 public mintPrice;
-    // uint256 public maxMintLimitPerAddr;
-    // uint256 public maxSupply;
-    // uint256 public mintStartTime;
     uint256 public aiModelId;
     uint256 public totalSupply;
     bool public hasStartMint;
 
-    mapping(address => uint256) public _mintedCounts;
+    /// @notice Gas limit set on the callback from AIOracle.
+    /// @dev Should be set to the maximum amount of gas your callback might reasonably consume.
+    uint64 public aiOracleCallbackGasLimit = 500000; // default sd: 500k
+    // mapping(address => uint256) public _mintedCounts;
 
     struct AIGC_Token {
         string prompt;
         uint256 seed;
+        address author;
+    }
+
+    struct AIOracleRequest {
+        address sender;
+        uint256 modelId;
+        bytes input;
+        bytes output;
     }
 
     mapping(uint256 => AIGC_Token) public AIGC_tokens; // token ID => xx
+    mapping(uint256 => AIOracleRequest) public requests;
+    mapping(bytes => uint256) public promptSeedToTokenId;
 
     event promptsUpdated(
+        uint256 requestId,
         uint256 modelId,
         string input,
-        string output
+        string output,
+        bytes callbackData
     );
 
     event promptRequest(
-        address sender,
+        uint256 requestId,
+        address sender, 
         uint256 modelId,
         string prompt
     );
@@ -62,14 +77,16 @@ contract AIGC_NFT is AIOracleCallbackReceiver, Ownable, ERC721 {
         aiModelId = _aiModelId;
       }
 
-    /// @notice Gas limit set on the callback from AIOracle.
-    /// @dev Should be set to the maximum amount of gas your callback might reasonably consume.
-    uint64 private constant AIORACLE_CALLBACK_GAS_LIMIT = 5000000;
 
     // uint256: modelID, 0 for Llama, 1 for stable diffusion
     // 1.string => 2.string: 1.string: prompt,
     // 2.string: text (for llama), cid (for sd)
     mapping(uint256 => mapping(string => string)) public prompts;
+
+    function encode(string memory prompt, uint256 seed) public pure returns (bytes memory) {
+        bytes memory data = abi.encodePacked(seed, prompt);
+        return data;
+    } 
 
     function getAIResultFromTokenId(uint256 tokenId) public view returns (string memory) {
         if (AIGC_tokens[tokenId].seed == 0) {
@@ -83,43 +100,56 @@ contract AIGC_NFT is AIOracleCallbackReceiver, Ownable, ERC721 {
         hasStartMint = !hasStartMint;
     }
 
+    function updateAIOracleCallbackGasLimit(uint64 _gasLimit) external onlyOwner {
+        aiOracleCallbackGasLimit = _gasLimit;
+    }
+
     // only the AI Oracle can call this function
-    function storeAIResult(uint256 modelId, bytes calldata input, bytes calldata output) external onlyAIOracleCallback() {
-        prompts[modelId][string(input)] = string(output);
-        emit promptsUpdated(modelId, string(input), string(output));
+    function aiOracleCallback(uint256 requestId, bytes calldata output, bytes calldata callbackData) external override onlyAIOracleCallback() {
+        AIOracleRequest storage request = requests[requestId];
+        require(request.sender != address(0), "request not exists");
+        prompts[aiModelId][string(request.input)] = string(output);
+        emit promptsUpdated(requestId, request.modelId, string(request.input), string(output), callbackData);
     }
 
-    function calculateAIResult(uint256 seed, string calldata prompt) internal{
+    function calculateAIResult(string calldata prompt, uint256 seed) internal {
         bytes memory input = abi.encodePacked(seed, prompt);
-        aiOracle.requestCallback(
-            aiModelId, input, address(this), this.storeAIResult.selector, AIORACLE_CALLBACK_GAS_LIMIT
+        // we do not need to set the callbackData in this example
+        uint256 requestId = aiOracle.requestCallback{value: msg.value}(
+            aiModelId, input, address(this), aiOracleCallbackGasLimit, ""
         );
-        emit promptRequest(msg.sender, aiModelId, prompt);
+        AIOracleRequest storage request = requests[requestId];
+        request.input = input;
+        request.sender = msg.sender;
+        request.modelId = aiModelId;
+        emit promptRequest(requestId, msg.sender, aiModelId, prompt);
     }
 
+    function estimateOAOFee() public view returns (uint256) {
+        return aiOracle.estimateFee(aiModelId, aiOracleCallbackGasLimit);
+    }
+    function estimateTotalFee() public view returns (uint256) {
+        return estimateOAOFee() + mintPrice;
+    }
   
     /// NFT related
     function mint(address to, string calldata prompt, uint256 seed) external payable returns (uint256 tokenId) {
         // check time
         require(hasStartMint, "Sale not started");
-        // require(block.timestamp >= mintStartTime, "Sale not started");
-        // require(block.timestamp >= testMintStartTime, "Sale not started");
-        // check if enough maxMintCount per address
-        // require(_mintedCounts[to] + 1 <= maxMintLimitPerAddr, "Not enough maxMintCount per address per address");
-        // check if Exceed max total supply
-        // require(totalSupply + 1 <= maxSupply, "Exceed max total upply");
+        require(promptSeedToTokenId[encode(prompt, seed)] == 0, "prompt and seed has already minted");
         // check fund
-        require(msg.value >= mintPrice, "Not enough fund to mint NFT");
+        require(msg.value >= estimateTotalFee(), "Not enough fund to mint NFT");
         
         // calculate AI result
-        AIGC_tokens[totalSupply] = AIGC_Token(prompt, seed);
-        calculateAIResult(seed, prompt);
+        AIGC_tokens[totalSupply] = AIGC_Token(prompt, seed, to);
+        calculateAIResult(prompt, seed);
         // mint
-        super._safeMint(to, 1);
+        super._safeMint(to, totalSupply);
         // increase minted count
-        _mintedCounts[to] ++;
+        // _mintedCounts[to] ++;
 
         totalSupply ++;
+        promptSeedToTokenId[encode(prompt, seed)] = totalSupply; // actual value is minus 1
 
         return totalSupply - 1;
     }
