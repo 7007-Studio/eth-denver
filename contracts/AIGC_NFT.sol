@@ -161,7 +161,7 @@ contract AIGC_NFT is AIOracleCallbackReceiver, Ownable, ERC721 {
 
     function tokenURI(uint256 tokenId) override public view returns (string memory) {
       string memory json = Base64.encode(bytes(string(abi.encodePacked(
-        '{"name": "AIGC #', toString(tokenId), '", "description": "", "image": "https://gateway.pinata.cloud/ipfs/', getAIResultFromTokenId(tokenId), '"}'))));
+        '{"name": "AIGC #', toString(tokenId), '", "attributes": [{"trait_type": "prompt", "value": "', AIGC_tokens[tokenId].prompt, '"}, {"trait_type": "seed", "value": "', toString(AIGC_tokens[tokenId].seed), '"}, {"trait_type": "author", "value": "0x', toAsciiString(AIGC_tokens[tokenId].author), '"}, {"trait_type": "model", "value": "Stable Diffusion"}], "description": "", "image": "https://gateway.pinata.cloud/ipfs/', getAIResultFromTokenId(tokenId), '"}'))));
       string memory output = string(abi.encodePacked('data:application/json;base64,', json));
 
       return output;
@@ -188,6 +188,23 @@ contract AIGC_NFT is AIOracleCallbackReceiver, Ownable, ERC721 {
         }
         return string(buffer);
     }
+}
+
+function toAsciiString(address x) pure returns (string memory) {
+    bytes memory s = new bytes(40);
+    for (uint i = 0; i < 20; i++) {
+        bytes1 b = bytes1(uint8(uint(uint160(x)) / (2**(8*(19 - i)))));
+        bytes1 hi = bytes1(uint8(b) / 16);
+        bytes1 lo = bytes1(uint8(b) - 16 * uint8(hi));
+        s[2*i] = char(hi);
+        s[2*i+1] = char(lo);            
+    }
+    return string(s);
+}
+
+function char(bytes1 b) pure returns (bytes1 c) {
+    if (uint8(b) < 10) return bytes1(uint8(b) + 0x30);
+    else return bytes1(uint8(b) + 0x57);
 }
 
 /// [MIT License]
