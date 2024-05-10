@@ -164,7 +164,7 @@ contract AIGC_NFT is AIOracleCallbackReceiver, Ownable, ERC721 {
 
     function tokenURI(uint256 tokenId) override public view returns (string memory) {
       string memory json = Base64.encode(bytes(string(abi.encodePacked(
-        '{"name":"', AIGC_tokens[tokenId].title, '", "attributes": [{"trait_type": "positive_prompt", "value": "', AIGC_tokens[tokenId].prompt, '"}, {"trait_type": "negative_prompt", "value": "', AIGC_tokens[tokenId].neg_prompt, '"}, {"trait_type": "seed", "value": "', toString(AIGC_tokens[tokenId].seed), '"}, {"trait_type": "author", "value": "0x', toAsciiString(AIGC_tokens[tokenId].author), '"}, {"trait_type": "model", "value": "Stable Diffusion"}], "image": "https://gateway.pinata.cloud/ipfs/', getAIResultFromTokenId(tokenId), '"}'))));
+        '{"name":"', AIGC_tokens[tokenId].title, '", "attributes": [{"trait_type": "positive_prompt", "value": "', AIGC_tokens[tokenId].prompt, '"}, {"trait_type": "negative_prompt", "value": "', AIGC_tokens[tokenId].neg_prompt, '"}, {"trait_type": "seed", "value": "', toString(AIGC_tokens[tokenId].seed), '"}, {"trait_type": "author", "value": "0x', toAsciiString(AIGC_tokens[tokenId].author), '"}, {"trait_type": "model", "value": "Stable Diffusion"}], "description": "Stable Diffusion is a latent text-to-image diffusion model capable of generating photo-realistic images given any text input.", "image": "https://gateway.pinata.cloud/ipfs/', getAIResultFromTokenId(tokenId), '"}'))));
       string memory output = string(abi.encodePacked('data:application/json;base64,', json));
 
       return output;
