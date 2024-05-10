@@ -3,7 +3,7 @@ const { ethers } = require("ethers");
 async function main() {
   // verify contracts
   await hre.run("verify:verify", {
-    address: "0xE121f0e46Ca4432b841081C59B72475AB62182be",
+    address: "0x32088Be31D2403db83bC2de80Ba244455a34f4c3",
     constructorArguments: [
       // Constructor arguments
       // AI oracle addr on sepolia
