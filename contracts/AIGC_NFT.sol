@@ -26,6 +26,8 @@ contract AIGC_NFT is AIOracleCallbackReceiver, Ownable, ERC721 {
 
     struct AIGC_Token {
         string prompt;
+        string neg_prompt;
+        string title;
         uint256 seed;
         address author;
     }
@@ -90,9 +92,9 @@ contract AIGC_NFT is AIOracleCallbackReceiver, Ownable, ERC721 {
 
     function getAIResultFromTokenId(uint256 tokenId) public view returns (string memory) {
         if (AIGC_tokens[tokenId].seed == 0) {
-            return prompts[aiModelId][AIGC_tokens[tokenId].prompt];
+            return prompts[aiModelId][string(abi.encodePacked(AIGC_tokens[tokenId].prompt, "---", AIGC_tokens[tokenId].neg_prompt))];
         }
-        bytes memory data = abi.encodePacked(AIGC_tokens[tokenId].seed, AIGC_tokens[tokenId].prompt);
+        bytes memory data = abi.encodePacked(AIGC_tokens[tokenId].seed, string(abi.encodePacked(AIGC_tokens[tokenId].prompt, "---", AIGC_tokens[tokenId].neg_prompt)));
         return prompts[aiModelId][string(data)];
     }
 
@@ -112,7 +114,7 @@ contract AIGC_NFT is AIOracleCallbackReceiver, Ownable, ERC721 {
         emit promptsUpdated(requestId, request.modelId, string(request.input), string(output), callbackData);
     }
 
-    function calculateAIResult(string calldata prompt, uint256 seed) internal {
+    function calculateAIResult(string memory prompt, uint256 seed) internal {
         bytes memory input = abi.encodePacked(seed, prompt);
         // we do not need to set the callbackData in this example
         uint256 requestId = aiOracle.requestCallback{value: msg.value}(
@@ -133,15 +135,16 @@ contract AIGC_NFT is AIOracleCallbackReceiver, Ownable, ERC721 {
     }
   
     /// NFT related
-    function mint(address to, string calldata prompt, uint256 seed) external payable returns (uint256 tokenId) {
+    function mint(address to, string calldata positive_prompt, string calldata neg_prompt, string calldata title, uint256 seed) external payable returns (uint256 tokenId) {
         // check time
         require(hasStartMint, "Sale not started");
+        string memory prompt = string(abi.encodePacked(positive_prompt, "---", neg_prompt));
         require(promptSeedToTokenId[encode(prompt, seed)] == 0, "prompt and seed has already minted");
         // check fund
         require(msg.value >= estimateTotalFee(), "Not enough fund to mint NFT");
         
         // calculate AI result
-        AIGC_tokens[totalSupply] = AIGC_Token(prompt, seed, to);
+        AIGC_tokens[totalSupply] = AIGC_Token(positive_prompt, neg_prompt, title, seed, to);
         calculateAIResult(prompt, seed);
         // mint
         super._safeMint(to, totalSupply);
@@ -161,7 +164,7 @@ contract AIGC_NFT is AIOracleCallbackReceiver, Ownable, ERC721 {
 
     function tokenURI(uint256 tokenId) override public view returns (string memory) {
       string memory json = Base64.encode(bytes(string(abi.encodePacked(
-        '{"name": "AIGC #', toString(tokenId), '", "attributes": [{"trait_type": "prompt", "value": "', AIGC_tokens[tokenId].prompt, '"}, {"trait_type": "seed", "value": "', toString(AIGC_tokens[tokenId].seed), '"}, {"trait_type": "author", "value": "0x', toAsciiString(AIGC_tokens[tokenId].author), '"}, {"trait_type": "model", "value": "Stable Diffusion"}], "description": "", "image": "https://gateway.pinata.cloud/ipfs/', getAIResultFromTokenId(tokenId), '"}'))));
+        '{"name":"', AIGC_tokens[tokenId].title, '", "attributes": [{"trait_type": "positive_prompt", "value": "', AIGC_tokens[tokenId].prompt, '"}, {"trait_type": "negative_prompt", "value": "', AIGC_tokens[tokenId].neg_prompt, '"}, {"trait_type": "seed", "value": "', toString(AIGC_tokens[tokenId].seed), '"}, {"trait_type": "author", "value": "0x', toAsciiString(AIGC_tokens[tokenId].author), '"}, {"trait_type": "model", "value": "Stable Diffusion"}], "image": "https://gateway.pinata.cloud/ipfs/', getAIResultFromTokenId(tokenId), '"}'))));
       string memory output = string(abi.encodePacked('data:application/json;base64,', json));
 
       return output;

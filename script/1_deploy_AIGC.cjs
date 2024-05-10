@@ -20,6 +20,8 @@ const contractFactory = new ethers.ContractFactory(
   signer
 );
 
+console.log(signer.address);
+
 async function deployContract() {
   try {
     // Deploy contract
